@@ -96,3 +96,46 @@ convert gpt
 But this also wipes everything. There's no non-destructive GPT↔MBR conversion without third-party tools (e.g., **MiniTool Partition Wizard**, **AOMEI**, `gdisk` on Linux with `sgdisk -g`). Even those involve risk on the boot/system drive.
 
 **TL;DR**: For an ASUS A55D with Win7 and an SSD under 2 TB, MBR is fine — you won't hit the practical limits. Just know the tradeoffs if you ever repurpose the drive.
+
+---
+
+### UEFI Boot Path (Expanded)
+
+UEFI is the modern replacement for the old BIOS/CSM (Compatibility Support Module) boot method. GPT is the modern partition table standard, and UEFI requires GPT to boot. Legacy BIOS boots from MBR. The ASUS A55D motherboard supports UEFI.
+
+The reason you hit the error is that the Windows 7 installer booted in legacy BIOS mode, which can only write to MBR disks. If you boot the same installer in UEFI mode, it will happily install to a GPT drive.
+
+#### How to boot the Windows 7 installer in UEFI mode
+
+When you boot from the USB/DVD, most ASUS boards show a Boot Menu (press F8 during POST) with two entries for the same drive:
+
+- `USB: Your USB Name` — legacy BIOS boot
+- `UEFI: Your USB Name` — UEFI boot
+
+Select the `UEFI:` prefixed option. The installer will then detect that it's running in UEFI mode and allow GPT partitions.
+
+#### Making a UEFI-bootable Windows 7 USB
+
+Many tools (Rufus, Windows USB/DVD Tool) create a legacy-only USB by default. To make it UEFI-bootable:
+
+**Using Rufus:**
+- Partition scheme: **GPT**
+- Target system: **UEFI (non-CSM)**
+- File system: **FAT32** (NTFS won't boot on UEFI)
+- Point it at your Win7 ISO
+
+**Manual method:**
+1. Format the USB as FAT32
+2. Extract the entire Win7 ISO contents to the USB
+3. The `efi/boot/bootx64.efi` file needs to exist in the extracted files
+
+#### Windows 7 UEFI caveats
+
+- **64-bit only** — 32-bit Win7 doesn't support UEFI boot
+- **No Secure Boot** — Win7 predates Secure Boot; you must disable it in BIOS
+- **USB 3.0 drivers** — The ASUS A55D has USB 3.0 ports. Windows 7 doesn't include USB 3.0 drivers natively. If you're booting from a USB 3.0 port, the installer may not see the drive. Use a **USB 2.0 port** (they're the black/white ones, not blue) or slipstream USB 3.0 drivers into the ISO
+- **NVMe drivers** — If the 850 Pro is connected via an M.2 slot, Win7 lacks native NVMe drivers. You'd need to slipstream them or use a SATA-connected SSD
+
+#### The simpler path
+
+Since your goal is just get Windows 7 installed on the SSD, not preserve GPT, the `convert mbr` approach is the simpler, zero-hassle method — it avoids all the UEFI/USB 3.0/NVMe driver pitfalls entirely. The UEFI route is useful if you **need** GPT (e.g., dual-booting with a modern OS that requires GPT), but if not, MBR is the path of least resistance for Win7.
