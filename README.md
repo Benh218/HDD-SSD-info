@@ -69,3 +69,30 @@ Wiped the repo, re-created this README with the token redacted, and force-pushed
 The GitHub token used in this session has been redacted from this repo. The original token was: [REDACTED]
 
 **Please ensure you revoke the token at https://github.com/settings/tokens if you haven't already.**
+
+---
+
+### User
+What are the downsides to converting the SSD from GPT to MBR? And is it reversible?
+
+### Assistant
+
+#### Downsides
+- **Max partition size**: MBR supports only **2 TB** max per partition. The 850 Pro (typically 128GB–1TB) is fine, but reusing the drive later with larger partitions won't work.
+- **Max 4 primary partitions** (or 3 + extended). GPT supports up to 128.
+- **No UEFI boot** — MBR requires legacy BIOS/CSM mode, which is slower to boot and lacks Secure Boot.
+- **No backup partition table** — GPT stores a backup header at the end of the disk; MBR has no redundancy.
+- **OS limitations** — Modern OSes (Windows 10/11, modern Linux) prefer GPT for UEFI.
+
+#### Reversibility
+
+**`convert mbr` (via `clean`) is destructive** — it wipes all data on the disk. You can later re-convert back to GPT with:
+```
+diskpart
+select disk N
+clean
+convert gpt
+```
+But this also wipes everything. There's no non-destructive GPT↔MBR conversion without third-party tools (e.g., **MiniTool Partition Wizard**, **AOMEI**, `gdisk` on Linux with `sgdisk -g`). Even those involve risk on the boot/system drive.
+
+**TL;DR**: For an ASUS A55D with Win7 and an SSD under 2 TB, MBR is fine — you won't hit the practical limits. Just know the tradeoffs if you ever repurpose the drive.
